@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PuzzleScape — Rompecabezas</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- PANTALLA DE INICIO -->
+<div id="screen-home" class="screen active">
+  <div class="home-bg"></div>
+  <header class="home-header">
+    <div class="logo">
+      <span class="logo-icon">🧩</span>
+      <span class="logo-text">PuzzleScape</span>
+    </div>
+  </header>
+
+  <div class="home-hero">
+    <h1>Rompecabezas<br><em>Artísticos</em></h1>
+    <p>Elige una imagen y desafía tu mente</p>
+  </div>
+
+  <div class="gallery-section">
+    <h2 class="section-title">Colecciones</h2>
+    <div class="category-tabs">
+      <button class="cat-btn active" data-cat="all">Todas</button>
+      <button class="cat-btn" data-cat="nature">Naturaleza</button>
+      <button class="cat-btn" data-cat="city">Ciudades</button>
+      <button class="cat-btn" data-cat="art">Arte</button>
+      <button class="cat-btn" data-cat="animals">Animales</button>
+    </div>
+    <div class="puzzle-grid" id="puzzle-grid"></div>
+  </div>
+</div>
+
+<!-- PANTALLA DE CONFIGURACIÓN -->
+<div id="screen-config" class="screen">
+  <div class="config-backdrop" id="config-backdrop"></div>
+  <div class="config-panel">
+    <button class="back-btn" id="back-to-home">← Volver</button>
+    <div class="config-preview-wrap">
+      <img id="config-preview-img" src="" alt="preview">
+      <div class="config-preview-overlay">
+        <span id="config-puzzle-name"></span>
+      </div>
+    </div>
+    <h2>Configurar partida</h2>
+    <div class="difficulty-options">
+      <div class="diff-label">Número de piezas</div>
+      <div class="diff-grid">
+        <button class="diff-btn active" data-pieces="16">
+          <span class="diff-icon">😊</span>
+          <span class="diff-num">16</span>
+          <span class="diff-name">Fácil</span>
+        </button>
+        <button class="diff-btn" data-pieces="36">
+          <span class="diff-icon">🤔</span>
+          <span class="diff-num">36</span>
+          <span class="diff-name">Normal</span>
+        </button>
+        <button class="diff-btn" data-pieces="64">
+          <span class="diff-icon">😤</span>
+          <span class="diff-num">64</span>
+          <span class="diff-name">Difícil</span>
+        </button>
+        <button class="diff-btn" data-pieces="100">
+          <span class="diff-icon">🔥</span>
+          <span class="diff-num">100</span>
+          <span class="diff-name">Experto</span>
+        </button>
+      </div>
+    </div>
+    <div class="config-options">
+      <label class="toggle-row">
+        <span>Mostrar imagen de referencia</span>
+        <input type="checkbox" id="opt-preview" checked>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </label>
+      <label class="toggle-row">
+        <span>Girar piezas aleatoriamente</span>
+        <input type="checkbox" id="opt-rotate">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </label>
+    </div>
+    <button class="play-btn" id="start-game-btn">¡Jugar!</button>
+  </div>
+</div>
+
+<!-- PANTALLA DE JUEGO -->
+<div id="screen-game" class="screen">
+  <div class="game-topbar">
+    <button class="topbar-btn" id="btn-back-game" title="Menú">⬅</button>
+    <div class="game-info">
+      <div class="info-chip" id="timer-display">⏱ 00:00</div>
+      <div class="info-chip" id="pieces-display">🧩 0 / 0</div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" id="btn-hint" title="Pista">💡</button>
+      <button class="topbar-btn" id="btn-ref" title="Referencia">🖼</button>
+      <button class="topbar-btn" id="btn-shuffle" title="Reorganizar">🔀</button>
+    </div>
+  </div>
+
+  <!-- Panel lateral referencia -->
+  <div id="ref-panel" class="ref-panel hidden">
+    <img id="ref-img" src="" alt="referencia">
+    <button id="close-ref">✕</button>
+  </div>
+
+  <div class="game-layout">
+    <!-- Área de piezas sueltas -->
+    <div id="pieces-tray" class="pieces-tray">
+      <div class="tray-label">Piezas disponibles</div>
+      <div id="pieces-container" class="pieces-container"></div>
+    </div>
+
+    <!-- Tablero de juego -->
+    <div class="board-wrap">
+      <canvas id="puzzle-board" class="puzzle-board"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA DE VICTORIA -->
+<div id="screen-win" class="screen">
+  <div class="win-overlay"></div>
+  <div class="win-panel">
+    <div class="win-confetti" id="confetti-container"></div>
+    <div class="win-emoji">🎉</div>
+    <h1 class="win-title">¡Completado!</h1>
+    <div class="win-image-wrap">
+      <img id="win-image" src="" alt="puzzle completado">
+    </div>
+    <div class="win-stats">
+      <div class="win-stat">
+        <span class="stat-label">Tiempo</span>
+        <span class="stat-val" id="win-time">--</span>
+      </div>
+      <div class="win-stat">
+        <span class="stat-label">Piezas</span>
+        <span class="stat-val" id="win-pieces">--</span>
+      </div>
+      <div class="win-stat">
+        <span class="stat-label">Puntuación</span>
+        <span class="stat-val" id="win-score">--</span>
+      </div>
+    </div>
+    <div class="win-actions">
+      <button class="win-btn primary" id="win-play-again">Jugar de nuevo</button>
+      <button class="win-btn secondary" id="win-home">Inicio</button>
+    </div>
+  </div>
+</div>
+
+<script src="puzzles.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
