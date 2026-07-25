@@ -23,14 +23,14 @@
 </script><script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sangre Carbayona - Puzzle Carbayón</title>
+  <title>Sangre Carbayona - Puzzle Carbayón V4</title>
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
   <header>
     <div>
       <h1>SANGRE CARBAYONA <span style="opacity:.6;font-weight:400">|</span> PUZZLE CARBAYÓN</h1>
-      <small>ROMPECABEZAS CLÁSICOS • ENCAJE PERFECTO • REAL OVIEDO</small>
+      <small>ROMPECABEZAS CLÁSICOS • PESTAÑA REDONDA GORDA • REAL OVIEDO</small>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span class="pill" id="diffLabel"></span>
@@ -60,7 +60,14 @@
   </div>
 
   <div id="trayWrap">
-    <div id="trayHeader"><span>BANDEJA • ARRASTRA AL TABLERO • <span id="trayCount">0 piezas</span></span><span style="opacity:.6">scroll horizontal con rueda / dedo</span></div>
+    <div id="trayHeader">
+      <span>BANDEJA • ARRASTRA FONDO PARA MOVER • <span id="trayCount">0 piezas</span></span>
+      <div class="tray-nav">
+        <button id="trayLeft" title="Izquierda">◀</button>
+        <button id="trayRight" title="Derecha">▶</button>
+        <span style="font-size:10px;opacity:.7;margin-left:6px">scroll visible azul abajo</span>
+      </div>
+    </div>
     <div id="tray"></div>
   </div>
 
@@ -74,7 +81,7 @@
         <button id="nextBtn" class="primary" style="height:44px;border-radius:999px;background:#0a3d8f;color:white;border:1px solid #0a3d8f;font-weight:700">Siguiente Nivel →</button>
         <button id="closeWinBtn" style="height:44px;border-radius:999px;background:#fff8e7;border:1px solid #e8dcc2;font-weight:700">Menú</button>
       </div>
-      <div style="font-size:10px;letter-spacing:.18em;color:#b8aa8d;margin-top:12px">SANGRE CARBAYONA • PUZZLE CARBAYÓN</div>
+      <div style="font-size:10px;letter-spacing:.18em;color:#b8aa8d;margin-top:12px">SANGRE CARBAYONA • PUZZLE CARBAYÓN V4 REDONDEADO</div>
     </div>
   </div>
 
