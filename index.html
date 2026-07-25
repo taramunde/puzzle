@@ -1,164 +1,88 @@
+
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PuzzleScape — Rompecabezas</title>
-<link rel="stylesheet" href="css/style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<head><!-- PLAYABLE_TOUCH_PATCH_V1 --><script>
+(function() {
+  if (window.__playableTouchPatchInstalled) return;
+  window.__playableTouchPatchInstalled = true;
+  var origAdd = EventTarget.prototype.addEventListener;
+  var blockedTypes = { touchstart: 1, touchmove: 1, wheel: 1 };
+  EventTarget.prototype.addEventListener = function(type, listener, options) {
+    if (blockedTypes[type]) {
+      if (options === undefined || options === null) {
+        options = { passive: true };
+      } else if (typeof options === 'boolean') {
+        options = { capture: options, passive: true };
+      } else {
+        options = Object.assign({}, options, { passive: true });
+      }
+    }
+    return origAdd.call(this, type, listener, options);
+  };
+})();
+</script><script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sangre Carbayona - Puzzle Carbayón</title>
+  <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
-
-<!-- PANTALLA DE INICIO -->
-<div id="screen-home" class="screen active">
-  <div class="home-bg"></div>
-  <header class="home-header">
-    <div class="logo">
-      <span class="logo-icon">🧩</span>
-      <span class="logo-text">PuzzleScape</span>
+  <header>
+    <div>
+      <h1>SANGRE CARBAYONA <span style="opacity:.6;font-weight:400">|</span> PUZZLE CARBAYÓN</h1>
+      <small>ROMPECABEZAS CLÁSICOS • ENCAJE PERFECTO • REAL OVIEDO</small>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="pill" id="diffLabel"></span>
+      <span class="pill" id="placedCount"></span>
     </div>
   </header>
 
-  <div class="home-hero">
-    <h1>Rompecabezas<br><em>Artísticos</em></h1>
-    <p>Elige una imagen y desafía tu mente</p>
+  <div class="controls">
+    <select id="diffSelect">
+      <option value="easy">Fácil - 12 piezas</option>
+      <option value="medium">Medio - 35 piezas</option>
+      <option value="hard">Difícil - 80 piezas</option>
+      <option value="legend">Leyenda - 140 piezas</option>
+    </select>
+    <select id="levelSelect"></select>
+    <button id="previewBtn">👁️ Preview (mantén)</button>
+    <button id="restartBtn">↻ Reiniciar</button>
+    <span class="pill">⏱️ <span id="time">00:00</span></span>
+    <span class="pill">📊 <span id="progress">0%</span></span>
+    <span style="font-size:11px;opacity:.6" id="levelTitle"></span>
   </div>
 
-  <div class="gallery-section">
-    <h2 class="section-title">Colecciones</h2>
-    <div class="category-tabs">
-      <button class="cat-btn active" data-cat="all">Todas</button>
-      <button class="cat-btn" data-cat="nature">Naturaleza</button>
-      <button class="cat-btn" data-cat="city">Ciudades</button>
-      <button class="cat-btn" data-cat="art">Arte</button>
-      <button class="cat-btn" data-cat="animals">Animales</button>
+  <div id="boardWrap">
+    <div id="board">
+      <div id="previewOverlay" class="preview-overlay"><img id="previewImg" src="" alt="preview"></div>
     </div>
-    <div class="puzzle-grid" id="puzzle-grid"></div>
   </div>
-</div>
 
-<!-- PANTALLA DE CONFIGURACIÓN -->
-<div id="screen-config" class="screen">
-  <div class="config-backdrop" id="config-backdrop"></div>
-  <div class="config-panel">
-    <button class="back-btn" id="back-to-home">← Volver</button>
-    <div class="config-preview-wrap">
-      <img id="config-preview-img" src="" alt="preview">
-      <div class="config-preview-overlay">
-        <span id="config-puzzle-name"></span>
+  <div id="trayWrap">
+    <div id="trayHeader"><span>BANDEJA • ARRASTRA AL TABLERO • <span id="trayCount">0 piezas</span></span><span style="opacity:.6">scroll horizontal con rueda / dedo</span></div>
+    <div id="tray"></div>
+  </div>
+
+  <div id="winModal" class="hidden">
+    <div class="modal">
+      <div style="width:48px;height:48px;background:#0a3d8f;color:white;border-radius:50%;display:grid;place-items:center;margin:0 auto;font-size:22px">🏆</div>
+      <h2>¡PUZZLE COMPLETADO!</h2>
+      <p id="winStats" style="font-size:13px;line-height:1.5;color:#6b5e4a"></p>
+      <img id="winThumb" src="" alt="completado">
+      <div class="actions">
+        <button id="nextBtn" class="primary" style="height:44px;border-radius:999px;background:#0a3d8f;color:white;border:1px solid #0a3d8f;font-weight:700">Siguiente Nivel →</button>
+        <button id="closeWinBtn" style="height:44px;border-radius:999px;background:#fff8e7;border:1px solid #e8dcc2;font-weight:700">Menú</button>
       </div>
-    </div>
-    <h2>Configurar partida</h2>
-    <div class="difficulty-options">
-      <div class="diff-label">Número de piezas</div>
-      <div class="diff-grid">
-        <button class="diff-btn active" data-pieces="16">
-          <span class="diff-icon">😊</span>
-          <span class="diff-num">16</span>
-          <span class="diff-name">Fácil</span>
-        </button>
-        <button class="diff-btn" data-pieces="36">
-          <span class="diff-icon">🤔</span>
-          <span class="diff-num">36</span>
-          <span class="diff-name">Normal</span>
-        </button>
-        <button class="diff-btn" data-pieces="64">
-          <span class="diff-icon">😤</span>
-          <span class="diff-num">64</span>
-          <span class="diff-name">Difícil</span>
-        </button>
-        <button class="diff-btn" data-pieces="100">
-          <span class="diff-icon">🔥</span>
-          <span class="diff-num">100</span>
-          <span class="diff-name">Experto</span>
-        </button>
-      </div>
-    </div>
-    <div class="config-options">
-      <label class="toggle-row">
-        <span>Mostrar imagen de referencia</span>
-        <input type="checkbox" id="opt-preview" checked>
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      </label>
-      <label class="toggle-row">
-        <span>Girar piezas aleatoriamente</span>
-        <input type="checkbox" id="opt-rotate">
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      </label>
-    </div>
-    <button class="play-btn" id="start-game-btn">¡Jugar!</button>
-  </div>
-</div>
-
-<!-- PANTALLA DE JUEGO -->
-<div id="screen-game" class="screen">
-  <div class="game-topbar">
-    <button class="topbar-btn" id="btn-back-game" title="Menú">⬅</button>
-    <div class="game-info">
-      <div class="info-chip" id="timer-display">⏱ 00:00</div>
-      <div class="info-chip" id="pieces-display">🧩 0 / 0</div>
-    </div>
-    <div class="topbar-right">
-      <button class="topbar-btn" id="btn-hint" title="Pista">💡</button>
-      <button class="topbar-btn" id="btn-ref" title="Referencia">🖼</button>
-      <button class="topbar-btn" id="btn-shuffle" title="Reorganizar">🔀</button>
+      <div style="font-size:10px;letter-spacing:.18em;color:#b8aa8d;margin-top:12px">SANGRE CARBAYONA • PUZZLE CARBAYÓN</div>
     </div>
   </div>
 
-  <!-- Panel lateral referencia -->
-  <div id="ref-panel" class="ref-panel hidden">
-    <img id="ref-img" src="" alt="referencia">
-    <button id="close-ref">✕</button>
-  </div>
+  <canvas id="confetti"></canvas>
 
-  <div class="game-layout">
-    <!-- Área de piezas sueltas -->
-    <div id="pieces-tray" class="pieces-tray">
-      <div class="tray-label">Piezas disponibles</div>
-      <div id="pieces-container" class="pieces-container"></div>
-    </div>
-
-    <!-- Tablero de juego -->
-    <div class="board-wrap">
-      <canvas id="puzzle-board" class="puzzle-board"></canvas>
-    </div>
-  </div>
-</div>
-
-<!-- PANTALLA DE VICTORIA -->
-<div id="screen-win" class="screen">
-  <div class="win-overlay"></div>
-  <div class="win-panel">
-    <div class="win-confetti" id="confetti-container"></div>
-    <div class="win-emoji">🎉</div>
-    <h1 class="win-title">¡Completado!</h1>
-    <div class="win-image-wrap">
-      <img id="win-image" src="" alt="puzzle completado">
-    </div>
-    <div class="win-stats">
-      <div class="win-stat">
-        <span class="stat-label">Tiempo</span>
-        <span class="stat-val" id="win-time">--</span>
-      </div>
-      <div class="win-stat">
-        <span class="stat-label">Piezas</span>
-        <span class="stat-val" id="win-pieces">--</span>
-      </div>
-      <div class="win-stat">
-        <span class="stat-label">Puntuación</span>
-        <span class="stat-val" id="win-score">--</span>
-      </div>
-    </div>
-    <div class="win-actions">
-      <button class="win-btn primary" id="win-play-again">Jugar de nuevo</button>
-      <button class="win-btn secondary" id="win-home">Inicio</button>
-    </div>
-  </div>
-</div>
-
-<script src="js/puzzles.js"></script>
-<script src="js/game.js"></script>
-
+  <script type="module">
+    import { init } from './js/game.js';
+    init();
+  </script>
 </body>
 </html>
