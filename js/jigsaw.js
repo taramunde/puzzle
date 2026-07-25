@@ -1,58 +1,81 @@
 
-// Generador de forma jigsaw clásica - encaje perfecto
-// tabs: 0 borde recto, 1 saliente, -1 entrante
+// V4 ULTRA REDONDEADO - puzzle clásico 100% redondo, cuello estrecho + cabeza gorda tipo seta
+// tabs: 0 recto, 1 saliente, -1 entrante
 
 export function makePiecePath(w,h,tabs,tabSize){
-  // w,h = tamaño útil de la pieza (sin pestañas)
-  // tabSize = tamaño de la pestaña
   const ts = tabSize;
   const pw = w;
   const ph = h;
   const midX = ts + pw/2;
   const midY = ts + ph/2;
-  const halfW = pw*0.16;
-  const halfH = ph*0.16;
 
   let d = `M ${ts} ${ts} `;
 
-  // TOP
+  // --- TOP ---
   if(tabs.top===0){
     d+=`L ${ts+pw} ${ts} `;
   } else {
-    const dy = -tabs.top*ts;
-    d+=`L ${midX-halfW} ${ts} `;
-    d+=`C ${midX-halfW*0.35} ${ts+dy*0.35} ${midX-halfW*0.18} ${ts+dy} ${midX} ${ts+dy} `;
-    d+=`C ${midX+halfW*0.18} ${ts+dy} ${midX+halfW*0.35} ${ts+dy*0.35} ${midX+halfW} ${ts} `;
+    const sign = tabs.top;
+    const neck = pw * 0.095;      // cuello MUY estrecho
+    const headR = pw * 0.18;      // radio cabeza grande
+    const headH = ph * 0.42 * sign; // altura cabeza gorda
+    // curva ultra redondeada
+    d+=`L ${midX - neck} ${ts} `;
+    // salida del cuello hacia la cabeza (curva suave)
+    d+=`C ${midX - neck*0.9} ${ts + headH*0.18} ${midX - headR*0.95} ${ts + headH*0.32} ${midX - headR*0.85} ${ts + headH*0.58} `;
+    // mitad inferior cabeza - redondeo gordo
+    d+=`C ${midX - headR*0.75} ${ts + headH*0.92} ${midX - headR*0.25} ${ts + headH*1.12} ${midX} ${ts + headH*1.12} `;
+    // lado derecho cabeza
+    d+=`C ${midX + headR*0.25} ${ts + headH*1.12} ${midX + headR*0.75} ${ts + headH*0.92} ${midX + headR*0.85} ${ts + headH*0.58} `;
+    d+=`C ${midX + headR*0.95} ${ts + headH*0.32} ${midX + neck*0.9} ${ts + headH*0.18} ${midX + neck} ${ts} `;
     d+=`L ${ts+pw} ${ts} `;
   }
-  // RIGHT
+
+  // --- RIGHT ---
   if(tabs.right===0){
     d+=`L ${ts+pw} ${ts+ph} `;
   } else {
-    const dx = tabs.right*ts;
-    d+=`L ${ts+pw} ${midY-halfH} `;
-    d+=`C ${ts+pw+dx*0.35} ${midY-halfH*0.35} ${ts+pw+dx} ${midY-halfH*0.18} ${ts+pw+dx} ${midY} `;
-    d+=`C ${ts+pw+dx} ${midY+halfH*0.18} ${ts+pw+dx*0.35} ${midY+halfH*0.35} ${ts+pw} ${midY+halfH} `;
+    const sign = tabs.right;
+    const neck = ph * 0.095;
+    const headR = ph * 0.18;
+    const headH = pw * 0.42 * sign;
+    d+=`L ${ts+pw} ${midY - neck} `;
+    d+=`C ${ts+pw + headH*0.18} ${midY - neck*0.9} ${ts+pw + headH*0.32} ${midY - headR*0.95} ${ts+pw + headH*0.58} ${midY - headR*0.85} `;
+    d+=`C ${ts+pw + headH*0.92} ${midY - headR*0.75} ${ts+pw + headH*1.12} ${midY - headR*0.25} ${ts+pw + headH*1.12} ${midY} `;
+    d+=`C ${ts+pw + headH*1.12} ${midY + headR*0.25} ${ts+pw + headH*0.92} ${midY + headR*0.75} ${ts+pw + headH*0.58} ${midY + headR*0.85} `;
+    d+=`C ${ts+pw + headH*0.32} ${midY + headR*0.95} ${ts+pw + headH*0.18} ${midY + neck*0.9} ${ts+pw} ${midY + neck} `;
     d+=`L ${ts+pw} ${ts+ph} `;
   }
-  // BOTTOM
+
+  // --- BOTTOM ---
   if(tabs.bottom===0){
     d+=`L ${ts} ${ts+ph} `;
   } else {
-    const dy = tabs.bottom*ts;
-    d+=`L ${midX+halfW} ${ts+ph} `;
-    d+=`C ${midX+halfW*0.35} ${ts+ph+dy*0.35} ${midX+halfW*0.18} ${ts+ph+dy} ${midX} ${ts+ph+dy} `;
-    d+=`C ${midX-halfW*0.18} ${ts+ph+dy} ${midX-halfW*0.35} ${ts+ph+dy*0.35} ${midX-halfW} ${ts+ph} `;
+    const sign = tabs.bottom;
+    const neck = pw * 0.095;
+    const headR = pw * 0.18;
+    const headH = ph * 0.42 * sign;
+    d+=`L ${midX + neck} ${ts+ph} `;
+    d+=`C ${midX + neck*0.9} ${ts+ph + headH*0.18} ${midX + headR*0.95} ${ts+ph + headH*0.32} ${midX + headR*0.85} ${ts+ph + headH*0.58} `;
+    d+=`C ${midX + headR*0.75} ${ts+ph + headH*0.92} ${midX + headR*0.25} ${ts+ph + headH*1.12} ${midX} ${ts+ph + headH*1.12} `;
+    d+=`C ${midX - headR*0.25} ${ts+ph + headH*1.12} ${midX - headR*0.75} ${ts+ph + headH*0.92} ${midX - headR*0.85} ${ts+ph + headH*0.58} `;
+    d+=`C ${midX - headR*0.95} ${ts+ph + headH*0.32} ${midX - neck*0.9} ${ts+ph + headH*0.18} ${midX - neck} ${ts+ph} `;
     d+=`L ${ts} ${ts+ph} `;
   }
-  // LEFT
+
+  // --- LEFT ---
   if(tabs.left===0){
     d+=`L ${ts} ${ts} Z`;
   } else {
-    const dx = -tabs.left*ts;
-    d+=`L ${ts} ${midY+halfH} `;
-    d+=`C ${ts+dx*0.35} ${midY+halfH*0.35} ${ts+dx} ${midY+halfH*0.18} ${ts+dx} ${midY} `;
-    d+=`C ${ts+dx} ${midY-halfH*0.18} ${ts+dx*0.35} ${midY-halfH*0.35} ${ts} ${midY-halfH} `;
+    const sign = tabs.left;
+    const neck = ph * 0.095;
+    const headR = ph * 0.18;
+    const headH = pw * 0.42 * sign;
+    d+=`L ${ts} ${midY + neck} `;
+    d+=`C ${ts + headH*0.18} ${midY + neck*0.9} ${ts + headH*0.32} ${midY + headR*0.95} ${ts + headH*0.58} ${midY + headR*0.85} `;
+    d+=`C ${ts + headH*0.92} ${midY + headR*0.75} ${ts + headH*1.12} ${midY + headR*0.25} ${ts + headH*1.12} ${midY} `;
+    d+=`C ${ts + headH*1.12} ${midY - headR*0.25} ${ts + headH*0.92} ${midY - headR*0.75} ${ts + headH*0.58} ${midY - headR*0.85} `;
+    d+=`C ${ts + headH*0.32} ${midY - headR*0.95} ${ts + headH*0.18} ${midY - neck*0.9} ${ts} ${midY - neck} `;
     d+=`L ${ts} ${ts} Z`;
   }
   return d;
@@ -67,7 +90,6 @@ export function createPieceSVG({id,r,c,tabs,w,h,tabSize,boardW,boardH,imgSrc,sca
   const imgW = boardW*scale;
   const imgH = boardH*scale;
 
-  // Usamos SVG con clipPath para compatibilidad total (no clip-path:path() que falla en webviews)
   const svgNS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(svgNS,"svg");
   svg.setAttribute("width", fullW+"");
@@ -77,7 +99,7 @@ export function createPieceSVG({id,r,c,tabs,w,h,tabSize,boardW,boardH,imgSrc,sca
 
   const defs = document.createElementNS(svgNS,"defs");
   const clip = document.createElementNS(svgNS,"clipPath");
-  const clipId = `clip-${id}-${isTray?'t':'b'}`;
+  const clipId = `clip-${id}-${isTray?'t':'b'}-${Math.random().toString(36).slice(2,6)}`;
   clip.setAttribute("id", clipId);
   const p = document.createElementNS(svgNS,"path");
   p.setAttribute("d", path);
@@ -87,7 +109,6 @@ export function createPieceSVG({id,r,c,tabs,w,h,tabSize,boardW,boardH,imgSrc,sca
 
   const g = document.createElementNS(svgNS,"g");
   g.setAttribute("clip-path", `url(#${clipId})`);
-
   const image = document.createElementNS(svgNS,"image");
   image.setAttribute("href", imgSrc);
   image.setAttribute("x", imgX+"");
@@ -96,17 +117,25 @@ export function createPieceSVG({id,r,c,tabs,w,h,tabSize,boardW,boardH,imgSrc,sca
   image.setAttribute("height", imgH+"");
   image.setAttribute("preserveAspectRatio","none");
   g.appendChild(image);
+  svg.appendChild(g);
 
-  // bisel sutil
   const border = document.createElementNS(svgNS,"path");
   border.setAttribute("d", path);
   border.setAttribute("fill","none");
-  border.setAttribute("stroke","rgba(0,0,0,0.22)");
-  border.setAttribute("stroke-width","1.2");
-  border.setAttribute("opacity","0.9");
-
-  svg.appendChild(g);
+  border.setAttribute("stroke","rgba(0,0,0,0.20)");
+  border.setAttribute("stroke-width","1.4");
+  border.setAttribute("stroke-linejoin","round");
+  border.setAttribute("stroke-linecap","round");
   svg.appendChild(border);
 
+  const inner = document.createElementNS(svgNS,"path");
+  inner.setAttribute("d", path);
+  inner.setAttribute("fill","none");
+  inner.setAttribute("stroke","rgba(255,255,255,0.42)");
+  inner.setAttribute("stroke-width","1");
+  inner.setAttribute("opacity","0.7");
+  inner.setAttribute("stroke-linejoin","round");
+  svg.appendChild(inner);
+
   return {svg, path, clipId};
-                                              }
+     }
