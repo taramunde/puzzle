@@ -10,7 +10,7 @@ let state = {
   diffKey: 'medium',
   boardW: 800,
   boardH: 528,
-  pieces: [], // {id,r,c,tabs,placed}
+  pieces: [],
   drag: null,
 };
 
@@ -38,7 +38,6 @@ function formatTime(s){
 function measureBoard(){
   const maxW = Math.min(boardWrap.clientWidth - 24, 900);
   state.boardW = maxW;
-  // relación 3:2 aproximada, se adapta luego a imagen real si quieres
   state.boardH = Math.round(maxW * 0.66);
   board.style.width = state.boardW + 'px';
   board.style.height = state.boardH + 'px';
@@ -80,19 +79,13 @@ function buildLevel(){
         left: vTabs[r][c],
         right: vTabs[r][c+1],
       };
-      // bordes planos
       if(r===0) tabs.top=0;
       if(r===rows-1) tabs.bottom=0;
       if(c===0) tabs.left=0;
       if(c===cols-1) tabs.right=0;
-      // el vecino debe ser opuesto: ya lo es porque hTabs/vTabs compartido pero signo igual,
-      // necesitamos invertir: si top de esta es X, bottom de arriba es -X. Como generamos random igual, invertimos ahora:
-      // Corrección simple: para cada interior, el tab de abajo de la pieza de arriba debe ser - tab de arriba de esta.
-      // Lo hacemos reasignando: tabs.top = -hTabs[r][c] si r>0? Mejor generamos ya con oposición.
       state.pieces.push({id:`${r}-${c}`, r,c,tabs,placed:false});
     }
   }
-  // corregir oposición real
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       const idx = r*cols+c;
@@ -106,10 +99,7 @@ function buildLevel(){
       }
     }
   }
-
-  // shuffle para bandeja
   state.pieces.sort(()=>Math.random()-0.5);
-
   render();
   startTimer();
   previewImg.src = level.img;
@@ -126,15 +116,11 @@ function render(){
   const diff = DIFFICULTIES[state.diffKey];
   const pw = state.boardW / diff.cols;
   const ph = state.boardH / diff.rows;
-  const tabSize = Math.min(pw,ph)*0.32;
+  const tabSize = Math.min(pw,ph)*0.42; // más grande para cabeza gorda
 
   board.innerHTML='';
   tray.innerHTML='';
 
-  // slots de referencia (opcional visual)
-  // for debugging puedes dibujar rejilla
-
-  // piezas colocadas en tablero
   for(const p of state.pieces){
     if(!p.placed) continue;
     const wrapper = document.createElement('div');
@@ -153,10 +139,9 @@ function render(){
     board.appendChild(wrapper);
   }
 
-  // piezas en bandeja
   const trayPieces = state.pieces.filter(p=>!p.placed);
   trayCount.textContent = `${trayPieces.length} piezas`;
-  const scaleTray = 0.72;
+  const scaleTray = 0.52; // MUCHO más pequeñas para que quepan y se pueda scrollear
 
   for(const p of trayPieces){
     const wrapper = document.createElement('div');
@@ -164,17 +149,13 @@ function render(){
     wrapper.dataset.id = p.id;
     wrapper.style.width = (pw*scaleTray + tabSize*2*scaleTray) + 'px';
     wrapper.style.height = (ph*scaleTray + tabSize*2*scaleTray) + 'px';
-
     const {svg} = createPieceSVG({
       id:p.id, r:p.r, c:p.c, tabs:p.tabs,
       w:pw, h:ph, tabSize, boardW:state.boardW, boardH:state.boardH,
       imgSrc: level.img, scale:scaleTray, isTray:true
     });
     wrapper.appendChild(svg);
-
-    // drag handlers
     wrapper.addEventListener('pointerdown', (e)=>onPointerDown(e,p));
-
     tray.appendChild(wrapper);
   }
 
@@ -192,20 +173,18 @@ function render(){
 let dragGhost = null;
 
 function onPointerDown(e,p){
+  // evitar que inicie scroll de bandeja si es pieza
+  e.stopPropagation();
   e.preventDefault();
   const level = LEVELS[state.levelIdx];
   const diff = DIFFICULTIES[state.diffKey];
   const pw = state.boardW / diff.cols;
   const ph = state.boardH / diff.rows;
-  const tabSize = Math.min(pw,ph)*0.32;
-
+  const tabSize = Math.min(pw,ph)*0.42;
   const rect = e.currentTarget.getBoundingClientRect();
   const offX = e.clientX - rect.left;
   const offY = e.clientY - rect.top;
-
   state.drag = {id:p.id, r:p.r, c:p.c, tabs:p.tabs};
-
-  // ghost
   dragGhost = document.createElement('div');
   dragGhost.className='piece';
   dragGhost.style.position='fixed';
@@ -220,10 +199,9 @@ function onPointerDown(e,p){
     w:pw, h:ph, tabSize, boardW:state.boardW, boardH:state.boardH,
     imgSrc: level.img, scale:1, isTray:false
   });
-  svg.style.transform='scale(1.06) rotate(1deg)';
+  svg.style.transform='scale(1.08) rotate(1deg)';
   dragGhost.appendChild(svg);
   document.body.appendChild(dragGhost);
-
   const move = (ev)=>{
     dragGhost.style.left = (ev.clientX - offX) + 'px';
     dragGhost.style.top = (ev.clientY - offY) + 'px';
@@ -231,17 +209,15 @@ function onPointerDown(e,p){
   const up = (ev)=>{
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', up);
-    // comprobar si está cerca del sitio correcto en el tablero
     const boardRect = board.getBoundingClientRect();
     const targetX = state.boardW/diff.cols * p.c;
     const targetY = state.boardH/diff.rows * p.r;
-    // posición del ghost relativa al board
     const ghostLeft = ev.clientX - offX;
     const ghostTop = ev.clientY - offY;
     const relX = ghostLeft - boardRect.left + tabSize;
     const relY = ghostTop - boardRect.top + tabSize;
     const dist = Math.hypot(relX - targetX, relY - targetY);
-    if(dist < 34){
+    if(dist < 40){
       const piece = state.pieces.find(x=>x.id===p.id);
       if(piece) piece.placed = true;
       render();
@@ -265,7 +241,6 @@ function onWin(){
 }
 
 export function init(){
-  // eventos UI
   $('#diffSelect').addEventListener('change', e=>{
     state.diffKey = e.target.value;
     localStorage.setItem('carb diff', state.diffKey);
@@ -279,7 +254,6 @@ export function init(){
   $('#previewBtn').addEventListener('pointerdown', ()=> previewOverlay.classList.add('on'));
   $('#previewBtn').addEventListener('pointerup', ()=> previewOverlay.classList.remove('on'));
   $('#previewBtn').addEventListener('pointerleave', ()=> previewOverlay.classList.remove('on'));
-
   $('#restartBtn').addEventListener('click', ()=> buildLevel());
   $('#nextBtn').addEventListener('click', ()=>{
     winModal.classList.add('hidden');
@@ -290,7 +264,43 @@ export function init(){
   });
   $('#closeWinBtn').addEventListener('click', ()=> winModal.classList.add('hidden'));
 
-  // cargar selects
+  // NUEVO: controles de bandeja para scroll fácil
+  const trayEl = $('#tray');
+  const leftBtn = $('#trayLeft');
+  const rightBtn = $('#trayRight');
+  const zoomIn = $('#trayZoomIn');
+  const zoomOut = $('#trayZoomOut');
+
+  leftBtn?.addEventListener('click', ()=> trayEl.scrollBy({left:-320, behavior:'smooth'}));
+  rightBtn?.addEventListener('click', ()=> trayEl.scrollBy({left:320, behavior:'smooth'}));
+
+  // drag para scrollear bandeja cuando arrastras el fondo
+  let isDown=false, startX, scrollLeft;
+  trayEl.addEventListener('pointerdown', (e)=>{
+    if(e.target.closest('.piece')) return; // si es pieza, no scrollear
+    isDown=true;
+    trayEl.classList.add('dragging');
+    startX = e.pageX - trayEl.offsetLeft;
+    scrollLeft = trayEl.scrollLeft;
+  });
+  trayEl.addEventListener('pointermove', (e)=>{
+    if(!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - trayEl.offsetLeft;
+    const walk = (x - startX) * 1.6;
+    trayEl.scrollLeft = scrollLeft - walk;
+  });
+  trayEl.addEventListener('pointerup', ()=>{ isDown=false; trayEl.classList.remove('dragging'); });
+  trayEl.addEventListener('pointerleave', ()=>{ isDown=false; trayEl.classList.remove('dragging'); });
+
+  // rueda horizontal
+  trayEl.addEventListener('wheel', (e)=>{
+    if(Math.abs(e.deltaX) < Math.abs(e.deltaY)){
+      e.preventDefault();
+      trayEl.scrollLeft += e.deltaY;
+    }
+  }, {passive:false});
+
   const levelSel = $('#levelSelect');
   LEVELS.forEach((lv,i)=>{
     const opt=document.createElement('option');
@@ -310,4 +320,4 @@ export function init(){
   });
 
   buildLevel();
-  }
+          }
