@@ -6,13 +6,17 @@ const $ = s=>document.querySelector(s);
 
 const TRAY_SCALE = 0.52; // escala única, compartida entre render() y el arrastre
 
+// Cada pieza tiene: location: 'tray' | 'board' | 'placed'
+//  - 'tray': está en la bandeja, aún no se ha soltado en el tablero
+//  - 'board': suelta en el tablero, en cualquier punto (x,y libres), se puede
+//             volver a mover, todavía NO está en su sitio correcto
+//  - 'placed': encajada en su posición correcta, ya fija, no se puede mover
 let state = {
   levelIdx: 0,
   diffKey: 'medium',
   boardW: 800,
   boardH: 528,
   pieces: [],
-  drag: null,
   won: false,
 };
 
@@ -61,6 +65,14 @@ function generateTabs(rows,cols){
   return {hTabs,vTabs};
 }
 
+function currentGeom(){
+  const diff = DIFFICULTIES[state.diffKey];
+  const pw = state.boardW / diff.cols;
+  const ph = state.boardH / diff.rows;
+  const tabSize = Math.min(pw,ph)*0.42;
+  return {diff, pw, ph, tabSize};
+}
+
 function buildLevel(){
   clearInterval(timer);
   seconds=0;
@@ -86,7 +98,7 @@ function buildLevel(){
       if(r===rows-1) tabs.bottom=0;
       if(c===0) tabs.left=0;
       if(c===cols-1) tabs.right=0;
-      state.pieces.push({id:`${r}-${c}`, r,c,tabs,placed:false});
+      state.pieces.push({id:`${r}-${c}`, r,c,tabs, location:'tray', x:0, y:0});
     }
   }
   for(let r=0;r<rows;r++){
@@ -116,33 +128,46 @@ function startTimer(){
 
 function render(){
   const level = LEVELS[state.levelIdx];
-  const diff = DIFFICULTIES[state.diffKey];
-  const pw = state.boardW / diff.cols;
-  const ph = state.boardH / diff.rows;
-  const tabSize = Math.min(pw,ph)*0.42; // más grande para cabeza gorda
+  const {diff, pw, ph, tabSize} = currentGeom();
 
   board.innerHTML='';
   tray.innerHTML='';
 
+  // Piezas encajadas (fijas en su celda correcta) + piezas sueltas en el tablero (movibles)
   for(const p of state.pieces){
-    if(!p.placed) continue;
+    if(p.location==='tray') continue;
     const wrapper = document.createElement('div');
-    wrapper.className='piece placed';
+    wrapper.className = 'piece' + (p.location==='placed' ? ' placed' : ' loose-on-board');
     wrapper.style.position='absolute';
-    wrapper.style.left = (p.c*pw - tabSize) + 'px';
-    wrapper.style.top = (p.r*ph - tabSize) + 'px';
+
+    let left, top;
+    if(p.location==='placed'){
+      left = p.c*pw - tabSize;
+      top = p.r*ph - tabSize;
+    } else {
+      left = p.x;
+      top = p.y;
+    }
+    wrapper.style.left = left + 'px';
+    wrapper.style.top = top + 'px';
     wrapper.style.width = (pw + tabSize*2) + 'px';
     wrapper.style.height = (ph + tabSize*2) + 'px';
+    wrapper.style.zIndex = p.location==='placed' ? 1 : 5;
+
     const {svg} = createPieceSVG({
       id:p.id, r:p.r, c:p.c, tabs:p.tabs,
       w:pw, h:ph, tabSize, boardW:state.boardW, boardH:state.boardH,
       imgSrc: level.img, scale:1, isTray:false
     });
     wrapper.appendChild(svg);
+
+    if(p.location!=='placed'){
+      wrapper.addEventListener('pointerdown', (e)=>onPointerDown(e,p,{fromTray:false}));
+    }
     board.appendChild(wrapper);
   }
 
-  const trayPieces = state.pieces.filter(p=>!p.placed);
+  const trayPieces = state.pieces.filter(p=>p.location==='tray');
   trayCount.textContent = `${trayPieces.length} piezas`;
 
   for(const p of trayPieces){
@@ -157,11 +182,11 @@ function render(){
       imgSrc: level.img, scale:TRAY_SCALE, isTray:true
     });
     wrapper.appendChild(svg);
-    wrapper.addEventListener('pointerdown', (e)=>onPointerDown(e,p));
+    wrapper.addEventListener('pointerdown', (e)=>onPointerDown(e,p,{fromTray:true}));
     tray.appendChild(wrapper);
   }
 
-  const placed = state.pieces.filter(p=>p.placed).length;
+  const placed = state.pieces.filter(p=>p.location==='placed').length;
   const total = state.pieces.length;
   const prog = total? Math.round(placed/total*100):0;
   progressEl.textContent = `${prog}%`;
@@ -173,25 +198,20 @@ function render(){
   }
 }
 
-let dragGhost = null;
-
-function onPointerDown(e,p){
-  // evitar que inicie scroll de bandeja si es pieza
+function onPointerDown(e, p, {fromTray}){
   e.stopPropagation();
   e.preventDefault();
   const level = LEVELS[state.levelIdx];
-  const diff = DIFFICULTIES[state.diffKey];
-  const pw = state.boardW / diff.cols;
-  const ph = state.boardH / diff.rows;
-  const tabSize = Math.min(pw,ph)*0.42;
+  const {diff, pw, ph, tabSize} = currentGeom();
+
   const rect = e.currentTarget.getBoundingClientRect();
-  // el offset se mide sobre la pieza de la bandeja (escala TRAY_SCALE),
-  // pero el fantasma se dibuja a escala 1:1 — hay que reescalar el offset
-  // para que la pieza no "salte" al empezar a arrastrar
-  const offX = (e.clientX - rect.left) / TRAY_SCALE;
-  const offY = (e.clientY - rect.top) / TRAY_SCALE;
-  state.drag = {id:p.id, r:p.r, c:p.c, tabs:p.tabs};
-  dragGhost = document.createElement('div');
+  // Si viene de la bandeja, la pieza se ve a TRAY_SCALE — hay que reescalar
+  // el punto donde se agarró para que no "salte" al pasar a escala 1:1.
+  const scaleAtGrab = fromTray ? TRAY_SCALE : 1;
+  const offX = (e.clientX - rect.left) / scaleAtGrab;
+  const offY = (e.clientY - rect.top) / scaleAtGrab;
+
+  const dragGhost = document.createElement('div');
   dragGhost.className='piece';
   dragGhost.style.position='fixed';
   dragGhost.style.left = (e.clientX - offX) + 'px';
@@ -208,32 +228,63 @@ function onPointerDown(e,p){
   svg.style.transform='scale(1.08) rotate(1deg)';
   dragGhost.appendChild(svg);
   document.body.appendChild(dragGhost);
+
+  // Mientras se arrastra, ocultamos la pieza original del tablero para no
+  // ver dos copias (la de la bandeja se elimina directamente del DOM abajo,
+  // solo aplica a piezas que ya estaban sueltas en el tablero).
+  if(!fromTray) e.currentTarget.style.visibility = 'hidden';
+
   const move = (ev)=>{
     dragGhost.style.left = (ev.clientX - offX) + 'px';
     dragGhost.style.top = (ev.clientY - offY) + 'px';
   };
+
   const up = (ev)=>{
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', up);
+    dragGhost.remove();
+
     const boardRect = board.getBoundingClientRect();
-    const targetX = state.boardW/diff.cols * p.c;
-    const targetY = state.boardH/diff.rows * p.r;
     const ghostLeft = ev.clientX - offX;
     const ghostTop = ev.clientY - offY;
-    const relX = ghostLeft - boardRect.left + tabSize;
-    const relY = ghostTop - boardRect.top + tabSize;
-    const dist = Math.hypot(relX - targetX, relY - targetY);
-    // tolerancia proporcional al tamaño de la pieza: antes era fija (40px),
-    // lo que hacía el encaje absurdamente fácil en "Leyenda" y algo ajustado en "Fácil"
+    // posición (top-left del wrapper) relativa al tablero
+    const relLeft = ghostLeft - boardRect.left;
+    const relTop = ghostTop - boardRect.top;
+
+    const targetLeft = pw*p.c - tabSize;
+    const targetTop = ph*p.r - tabSize;
+    const dist = Math.hypot(relLeft - targetLeft, relTop - targetTop);
+    // tolerancia de encaje proporcional al tamaño de pieza
     const snapTolerance = Math.min(pw,ph) * 0.35;
+
+    const piece = state.pieces.find(x=>x.id===p.id);
+    if(!piece) return;
+
     if(dist < snapTolerance){
-      const piece = state.pieces.find(x=>x.id===p.id);
-      if(piece) piece.placed = true;
-      render();
+      // encaja: queda fija en su sitio correcto
+      piece.location = 'placed';
+    } else {
+      // ¿se soltó sobre el área del tablero (con un margen)? si es así,
+      // se queda suelta ahí donde se soltó; si no, vuelve a la bandeja.
+      const margin = tabSize*2;
+      const overBoard = ghostLeft + (pw+tabSize*2) > boardRect.left - margin &&
+                         ghostLeft < boardRect.right + margin &&
+                         ghostTop + (ph+tabSize*2) > boardRect.top - margin &&
+                         ghostTop < boardRect.bottom + margin;
+      if(overBoard){
+        piece.location = 'board';
+        // clamp para que no se pueda soltar muy lejos fuera del tablero
+        const maxLeft = state.boardW - pw*0.15;
+        const minLeft = -pw*0.85;
+        const maxTop = state.boardH - ph*0.15;
+        const minTop = -ph*0.85;
+        piece.x = Math.min(Math.max(relLeft, minLeft), maxLeft);
+        piece.y = Math.min(Math.max(relTop, minTop), maxTop);
+      } else {
+        piece.location = 'tray';
+      }
     }
-    dragGhost.remove();
-    dragGhost=null;
-    state.drag=null;
+    render();
   };
   document.addEventListener('pointermove', move);
   document.addEventListener('pointerup', up);
