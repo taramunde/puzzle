@@ -1,4 +1,3 @@
-
 // CAMBIA AQUÍ POR FOTOS DE JUGADORES DEL REAL OVIEDO
 // Sustituye cada img por "/assets/oviedo/cazorla.jpg" etc.
 // Las imágenes deben ser 900x600 aprox. Puedes usar URL absolutas.
