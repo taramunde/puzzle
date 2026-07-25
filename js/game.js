@@ -1,9 +1,10 @@
-
 import { LEVELS, DIFFICULTIES } from './config.js';
 import { makePiecePath, createPieceSVG } from './jigsaw.js';
 import { launchConfetti } from './confetti.js';
 
 const $ = s=>document.querySelector(s);
+
+const TRAY_SCALE = 0.52; // escala única, compartida entre render() y el arrastre
 
 let state = {
   levelIdx: 0,
@@ -12,6 +13,7 @@ let state = {
   boardH: 528,
   pieces: [],
   drag: null,
+  won: false,
 };
 
 const boardWrap = $('#boardWrap');
@@ -62,6 +64,7 @@ function generateTabs(rows,cols){
 function buildLevel(){
   clearInterval(timer);
   seconds=0;
+  state.won = false;
   timeEl.textContent = formatTime(0);
   const level = LEVELS[state.levelIdx];
   const diff = DIFFICULTIES[state.diffKey];
@@ -141,18 +144,17 @@ function render(){
 
   const trayPieces = state.pieces.filter(p=>!p.placed);
   trayCount.textContent = `${trayPieces.length} piezas`;
-  const scaleTray = 0.52; // MUCHO más pequeñas para que quepan y se pueda scrollear
 
   for(const p of trayPieces){
     const wrapper = document.createElement('div');
     wrapper.className='piece';
     wrapper.dataset.id = p.id;
-    wrapper.style.width = (pw*scaleTray + tabSize*2*scaleTray) + 'px';
-    wrapper.style.height = (ph*scaleTray + tabSize*2*scaleTray) + 'px';
+    wrapper.style.width = (pw*TRAY_SCALE + tabSize*2*TRAY_SCALE) + 'px';
+    wrapper.style.height = (ph*TRAY_SCALE + tabSize*2*TRAY_SCALE) + 'px';
     const {svg} = createPieceSVG({
       id:p.id, r:p.r, c:p.c, tabs:p.tabs,
       w:pw, h:ph, tabSize, boardW:state.boardW, boardH:state.boardH,
-      imgSrc: level.img, scale:scaleTray, isTray:true
+      imgSrc: level.img, scale:TRAY_SCALE, isTray:true
     });
     wrapper.appendChild(svg);
     wrapper.addEventListener('pointerdown', (e)=>onPointerDown(e,p));
@@ -165,7 +167,8 @@ function render(){
   progressEl.textContent = `${prog}%`;
   $('#placedCount').textContent = `${placed}/${total}`;
 
-  if(total>0 && placed===total){
+  if(total>0 && placed===total && !state.won){
+    state.won = true;
     onWin();
   }
 }
@@ -182,8 +185,11 @@ function onPointerDown(e,p){
   const ph = state.boardH / diff.rows;
   const tabSize = Math.min(pw,ph)*0.42;
   const rect = e.currentTarget.getBoundingClientRect();
-  const offX = e.clientX - rect.left;
-  const offY = e.clientY - rect.top;
+  // el offset se mide sobre la pieza de la bandeja (escala TRAY_SCALE),
+  // pero el fantasma se dibuja a escala 1:1 — hay que reescalar el offset
+  // para que la pieza no "salte" al empezar a arrastrar
+  const offX = (e.clientX - rect.left) / TRAY_SCALE;
+  const offY = (e.clientY - rect.top) / TRAY_SCALE;
   state.drag = {id:p.id, r:p.r, c:p.c, tabs:p.tabs};
   dragGhost = document.createElement('div');
   dragGhost.className='piece';
@@ -217,7 +223,10 @@ function onPointerDown(e,p){
     const relX = ghostLeft - boardRect.left + tabSize;
     const relY = ghostTop - boardRect.top + tabSize;
     const dist = Math.hypot(relX - targetX, relY - targetY);
-    if(dist < 40){
+    // tolerancia proporcional al tamaño de la pieza: antes era fija (40px),
+    // lo que hacía el encaje absurdamente fácil en "Leyenda" y algo ajustado en "Fácil"
+    const snapTolerance = Math.min(pw,ph) * 0.35;
+    if(dist < snapTolerance){
       const piece = state.pieces.find(x=>x.id===p.id);
       if(piece) piece.placed = true;
       render();
@@ -243,12 +252,12 @@ function onWin(){
 export function init(){
   $('#diffSelect').addEventListener('change', e=>{
     state.diffKey = e.target.value;
-    localStorage.setItem('carb diff', state.diffKey);
+    localStorage.setItem('carb_diff', state.diffKey);
     buildLevel();
   });
   $('#levelSelect').addEventListener('change', e=>{
     state.levelIdx = parseInt(e.target.value);
-    localStorage.setItem('carb level', state.levelIdx);
+    localStorage.setItem('carb_level', state.levelIdx);
     buildLevel();
   });
   $('#previewBtn').addEventListener('pointerdown', ()=> previewOverlay.classList.add('on'));
@@ -259,17 +268,15 @@ export function init(){
     winModal.classList.add('hidden');
     state.levelIdx = (state.levelIdx+1) % LEVELS.length;
     $('#levelSelect').value = state.levelIdx;
-    localStorage.setItem('carb level', state.levelIdx);
+    localStorage.setItem('carb_level', state.levelIdx);
     buildLevel();
   });
   $('#closeWinBtn').addEventListener('click', ()=> winModal.classList.add('hidden'));
 
-  // NUEVO: controles de bandeja para scroll fácil
+  // controles de bandeja para scroll fácil
   const trayEl = $('#tray');
   const leftBtn = $('#trayLeft');
   const rightBtn = $('#trayRight');
-  const zoomIn = $('#trayZoomIn');
-  const zoomOut = $('#trayZoomOut');
 
   leftBtn?.addEventListener('click', ()=> trayEl.scrollBy({left:-320, behavior:'smooth'}));
   rightBtn?.addEventListener('click', ()=> trayEl.scrollBy({left:320, behavior:'smooth'}));
@@ -307,8 +314,8 @@ export function init(){
     opt.value=i; opt.textContent=lv.title;
     levelSel.appendChild(opt);
   });
-  const savedDiff = localStorage.getItem('carb diff');
-  const savedLevel = localStorage.getItem('carb level');
+  const savedDiff = localStorage.getItem('carb_diff');
+  const savedLevel = localStorage.getItem('carb_level');
   if(savedDiff && DIFFICULTIES[savedDiff]) state.diffKey = savedDiff;
   if(savedLevel) state.levelIdx = parseInt(savedLevel)||0;
   $('#diffSelect').value = state.diffKey;
@@ -320,4 +327,4 @@ export function init(){
   });
 
   buildLevel();
-          }
+}
