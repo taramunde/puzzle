@@ -1,4 +1,3 @@
-
 // V4 ULTRA REDONDEADO - puzzle clásico 100% redondo, cuello estrecho + cabeza gorda tipo seta
 // tabs: 0 recto, 1 saliente, -1 entrante
 
@@ -9,6 +8,15 @@ export function makePiecePath(w,h,tabs,tabSize){
   const midX = ts + pw/2;
   const midY = ts + ph/2;
 
+  // La profundidad del saliente (headH) SIEMPRE se basa en tabSize
+  // (que ya es min(pw,ph)*k), nunca en el ancho/alto de la propia pieza.
+  // Antes headH usaba pw o ph directamente: si la pieza no era cuadrada
+  // (filas != columnas, tablero no cuadrado...) el saliente salía ovalado
+  // y en piezas muy alargadas se recortaba contra el margen de la caja SVG.
+  // El ancho del cuello/cabeza (neck/headR) sí depende del lado (pw o ph)
+  // para que encaje proporcionalmente en ese borde.
+  const bumpDepth = ts * 0.88; // < tabSize para no recortarse en el borde de la caja
+
   let d = `M ${ts} ${ts} `;
 
   // --- TOP ---
@@ -16,16 +24,12 @@ export function makePiecePath(w,h,tabs,tabSize){
     d+=`L ${ts+pw} ${ts} `;
   } else {
     const sign = tabs.top;
-    const neck = pw * 0.095;      // cuello MUY estrecho
-    const headR = pw * 0.18;      // radio cabeza grande
-    const headH = ph * 0.42 * sign; // altura cabeza gorda
-    // curva ultra redondeada
+    const neck = pw * 0.13;
+    const headR = pw * 0.21;
+    const headH = bumpDepth * sign;
     d+=`L ${midX - neck} ${ts} `;
-    // salida del cuello hacia la cabeza (curva suave)
     d+=`C ${midX - neck*0.9} ${ts + headH*0.18} ${midX - headR*0.95} ${ts + headH*0.32} ${midX - headR*0.85} ${ts + headH*0.58} `;
-    // mitad inferior cabeza - redondeo gordo
     d+=`C ${midX - headR*0.75} ${ts + headH*0.92} ${midX - headR*0.25} ${ts + headH*1.12} ${midX} ${ts + headH*1.12} `;
-    // lado derecho cabeza
     d+=`C ${midX + headR*0.25} ${ts + headH*1.12} ${midX + headR*0.75} ${ts + headH*0.92} ${midX + headR*0.85} ${ts + headH*0.58} `;
     d+=`C ${midX + headR*0.95} ${ts + headH*0.32} ${midX + neck*0.9} ${ts + headH*0.18} ${midX + neck} ${ts} `;
     d+=`L ${ts+pw} ${ts} `;
@@ -36,9 +40,9 @@ export function makePiecePath(w,h,tabs,tabSize){
     d+=`L ${ts+pw} ${ts+ph} `;
   } else {
     const sign = tabs.right;
-    const neck = ph * 0.095;
-    const headR = ph * 0.18;
-    const headH = pw * 0.42 * sign;
+    const neck = ph * 0.13;
+    const headR = ph * 0.21;
+    const headH = bumpDepth * sign;
     d+=`L ${ts+pw} ${midY - neck} `;
     d+=`C ${ts+pw + headH*0.18} ${midY - neck*0.9} ${ts+pw + headH*0.32} ${midY - headR*0.95} ${ts+pw + headH*0.58} ${midY - headR*0.85} `;
     d+=`C ${ts+pw + headH*0.92} ${midY - headR*0.75} ${ts+pw + headH*1.12} ${midY - headR*0.25} ${ts+pw + headH*1.12} ${midY} `;
@@ -52,9 +56,9 @@ export function makePiecePath(w,h,tabs,tabSize){
     d+=`L ${ts} ${ts+ph} `;
   } else {
     const sign = tabs.bottom;
-    const neck = pw * 0.095;
-    const headR = pw * 0.18;
-    const headH = ph * 0.42 * sign;
+    const neck = pw * 0.13;
+    const headR = pw * 0.21;
+    const headH = bumpDepth * sign;
     d+=`L ${midX + neck} ${ts+ph} `;
     d+=`C ${midX + neck*0.9} ${ts+ph + headH*0.18} ${midX + headR*0.95} ${ts+ph + headH*0.32} ${midX + headR*0.85} ${ts+ph + headH*0.58} `;
     d+=`C ${midX + headR*0.75} ${ts+ph + headH*0.92} ${midX + headR*0.25} ${ts+ph + headH*1.12} ${midX} ${ts+ph + headH*1.12} `;
@@ -68,9 +72,9 @@ export function makePiecePath(w,h,tabs,tabSize){
     d+=`L ${ts} ${ts} Z`;
   } else {
     const sign = tabs.left;
-    const neck = ph * 0.095;
-    const headR = ph * 0.18;
-    const headH = pw * 0.42 * sign;
+    const neck = ph * 0.13;
+    const headR = ph * 0.21;
+    const headH = bumpDepth * sign;
     d+=`L ${ts} ${midY + neck} `;
     d+=`C ${ts + headH*0.18} ${midY + neck*0.9} ${ts + headH*0.32} ${midY + headR*0.95} ${ts + headH*0.58} ${midY + headR*0.85} `;
     d+=`C ${ts + headH*0.92} ${midY + headR*0.75} ${ts + headH*1.12} ${midY + headR*0.25} ${ts + headH*1.12} ${midY} `;
